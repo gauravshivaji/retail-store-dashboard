@@ -14,7 +14,7 @@ if "sales" not in st.session_state:
     st.session_state.sales = pd.DataFrame({
         "Date": pd.date_range("2025-08-01", periods=5),
         "Item": ["Rice", "Sugar", "Oil", "Milk", "Rice"],
-        "Quantity": [5, 3, 2, 4, 6]
+        "Quantity": [5, 3, 2, 4, 6],
     })
 
 if "suppliers" not in st.session_state:
@@ -22,6 +22,13 @@ if "suppliers" not in st.session_state:
         "Supplier": ["ABC Traders", "XYZ Foods"],
         "Contact": ["9876543210", "9123456780"]
     })
+
+# --- Calculate Revenue for Existing Sales ---
+st.session_state.sales["Revenue"] = st.session_state.sales.apply(
+    lambda row: row["Quantity"] * st.session_state.inventory.loc[
+        st.session_state.inventory["Item"] == row["Item"], "Price"
+    ].values[0], axis=1
+)
 
 # --- Title ---
 st.title("🏬 Retail Store Management System")
@@ -41,9 +48,11 @@ sale_item = st.selectbox("Select Item", st.session_state.inventory["Item"])
 sale_qty = st.number_input("Quantity Sold", min_value=1, value=1)
 if st.button("Add Sale"):
     st.session_state.inventory.loc[st.session_state.inventory["Item"] == sale_item, "Stock"] -= sale_qty
-    new_sale = pd.DataFrame({"Date": [pd.Timestamp.now()], "Item": [sale_item], "Quantity": [sale_qty]})
+    price = st.session_state.inventory.loc[st.session_state.inventory["Item"] == sale_item, "Price"].values[0]
+    revenue = sale_qty * price
+    new_sale = pd.DataFrame({"Date": [pd.Timestamp.now()], "Item": [sale_item], "Quantity": [sale_qty], "Revenue": [revenue]})
     st.session_state.sales = pd.concat([st.session_state.sales, new_sale], ignore_index=True)
-    st.success(f"✅ Sale recorded: {sale_item} - {sale_qty} units")
+    st.success(f"✅ Sale recorded: {sale_item} - {sale_qty} units | 💰 Revenue: ₹{revenue}")
 
 # --- Add Purchase ---
 st.subheader("🛒 Record Purchase")
@@ -70,8 +79,12 @@ if st.button("Add Supplier"):
 # --- Monthly Sales Report ---
 st.header("📊 Monthly Sales Report")
 st.session_state.sales["Month"] = st.session_state.sales["Date"].dt.to_period('M').astype(str)
-monthly_report = st.session_state.sales.groupby("Month")["Quantity"].sum().reset_index()
+monthly_report = st.session_state.sales.groupby("Month").agg(
+    Quantity=("Quantity", "sum"),
+    Revenue=("Revenue", "sum")
+).reset_index()
 st.dataframe(monthly_report)
 
-fig = px.bar(monthly_report, x="Month", y="Quantity", title="Monthly Sales")
+fig = px.bar(monthly_report, x="Month", y=["Quantity", "Revenue"],
+             title="Monthly Sales & Revenue", barmode="group")
 st.plotly_chart(fig)
