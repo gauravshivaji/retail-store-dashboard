@@ -1,4 +1,4 @@
-%%writefile retail_app.py
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -76,3 +76,4 @@ st.dataframe(monthly_report)
 
 fig = px.bar(monthly_report, x="Month", y="Quantity", title="Monthly Sales")
 st.plotly_chart(fig)
+
