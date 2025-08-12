@@ -75,6 +75,26 @@ if st.button("Add Supplier"):
             pd.DataFrame({"Supplier": [new_supplier_name], "Contact": [new_supplier_contact]})
         ], ignore_index=True)
         st.success("✅ Supplier added!")
+# --- Quantity Sold per Product ---
+st.header("📦 Quantity Sold per Product")
+
+product_report = st.session_state.sales.groupby("Item").agg(
+    Quantity=("Quantity", "sum"),
+    Revenue=("Revenue", "sum")
+).reset_index()
+
+st.dataframe(product_report)
+
+fig_product = px.bar(
+    product_report,
+    x="Item",
+    y="Quantity",
+    title="Total Quantity Sold per Product",
+    text_auto=True,
+    color="Item"
+)
+st.plotly_chart(fig_product)
+
 
 # --- Monthly Sales Report ---
 st.header("📊 Monthly Sales Report")
@@ -88,3 +108,4 @@ st.dataframe(monthly_report)
 fig = px.bar(monthly_report, x="Month", y=["Quantity", "Revenue"],
              title="Monthly Sales & Revenue", barmode="group")
 st.plotly_chart(fig)
+
